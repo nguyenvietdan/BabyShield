@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Baby Shield</string>
+    
+    <string name="block_touch_to_screen">Block touch to screen</string>
+    <string name="block_touch_content">This app helps prevent screen touches while kids are watching videos.</string>
+    <string name="disable">Disable</string>
+    <string name="enable">Enable</string>
+    <string name="grant_permission">Grant Permission to Display on Other Apps</string>
+    <string name="touch_blocking_is_active">Touch blocking is active. Press the lock button on the screen to unlock.</string>
+    <string name="touch_blocking_is_not_active">Touch blocking is off. Tap the button above to enable touch blocking.</string>"
+    <string name="need_to_grant_permission">You need to grant display permission over other apps to use the touch blocking feature.</string>
+</resources>
