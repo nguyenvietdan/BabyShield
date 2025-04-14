@@ -18,6 +18,7 @@ import com.monkey.domain.repository.BabyShieldDataSource
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
 
+
 @AndroidEntryPoint
 class OverlayService : Service() {
 
@@ -28,6 +29,13 @@ class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
     private lateinit var unlockButton: ImageButton
+
+    private val overlayParams = WindowManager.LayoutParams(
+        WindowManager.LayoutParams.MATCH_PARENT,
+        WindowManager.LayoutParams.MATCH_PARENT,
+        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+        PixelFormat.TRANSLUCENT)
     private var isLocked = true
 
     override fun onCreate() {
@@ -51,7 +59,7 @@ class OverlayService : Service() {
             NotificationHelper.createNotification(applicationContext)
         )
 
-        addOverlayToWindow()
+        addOverlayView()
         addLayoutParams(!isLocked)
 
         return START_STICKY
@@ -64,6 +72,8 @@ class OverlayService : Service() {
     override fun onDestroy() {
         if (::overlayView.isInitialized && overlayView.parent != null) {
             windowManager.removeView(overlayView)
+        }
+        if (::unlockButton.isInitialized && unlockButton.parent != null) {
             windowManager.removeView(unlockButton)
         }
         super.onDestroy()
@@ -72,7 +82,7 @@ class OverlayService : Service() {
     @SuppressLint("ClickableViewAccessibility")
     private fun setupOverlayView() {
         overlayView = View(this).apply {
-            setBackgroundColor(0x00000000) // Semi-transparent black
+            setBackgroundColor(0x00000000.toInt()) // Semi-transparent black
             // This is the key part - consume touch events
             setOnTouchListener { _, _ ->
                 isLocked
@@ -89,7 +99,7 @@ class OverlayService : Service() {
                 Log.i(TAG, "setupOverlayView: isLocked $isLocked")
                 if (isLocked) {
                     setImageResource(R.drawable.ic_lock)
-                    overlayView.setBackgroundColor(0x00000000) // Semi-transparent black
+                    overlayView.setBackgroundColor(0x00000000.toInt()) // Semi-transparent black
                 } else {
                     setImageResource(R.drawable.ic_unlock)
                     overlayView.setBackgroundColor(0x00000000) // Fully transparent
@@ -100,39 +110,27 @@ class OverlayService : Service() {
         }
     }
 
-    private fun addOverlayToWindow() {
-        // Setup layout params for overlay
-        val overlayParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
-        )
+    private fun addOverlayView() {
+        val params = overlayParams
+        params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        windowManager.addView(overlayView, overlayParams)
+        addUnlockButtonView()
+    }
 
-        // Setup layout params for unlock button
+    private fun addUnlockButtonView() {
         val buttonParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT).apply {
             gravity = Gravity.TOP or Gravity.END
-            x = 24
-            y = 120
         }
-
-        // Add views to window
-        windowManager.addView(overlayView, overlayParams)
         windowManager.addView(unlockButton, buttonParams)
     }
 
-
     private fun addLayoutParams(shouldAddedTouchable: Boolean) {
-        val params = overlayView.layoutParams as WindowManager.LayoutParams
+        val params = overlayParams
         params.flags =
             if (shouldAddedTouchable) params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
             else params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()

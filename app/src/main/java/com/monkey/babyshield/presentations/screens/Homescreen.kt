@@ -1,6 +1,5 @@
 package com.monkey.babyshield.presentations.screens
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -21,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,7 +38,6 @@ import com.monkey.babyshield.presentations.theme.BabyShieldTheme
 import com.monkey.babyshield.presentations.theme.InactiveRed
 import com.monkey.babyshield.presentations.viewmodel.BabyShieldViewModel
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
     val hasOverlayPermission by viewModel.hasOverlayPermission.collectAsState()
@@ -54,13 +53,11 @@ fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
             ).show()
         }
 
-    DisposableEffect(Unit) {
-        viewModel.checkOverlayPermission()
-        onDispose {
-            viewModel.checkOverlayPermission()
-        }
-
+    LaunchedEffect(Unit) {
+        viewModel.checkOverlayPermission() // initial check
     }
+
+    DisposableEffect(Unit) { onDispose { } }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
         Column(
@@ -125,7 +122,6 @@ fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
