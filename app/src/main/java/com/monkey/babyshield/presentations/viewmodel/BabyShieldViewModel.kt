@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.lifecycle.ViewModel
 import com.monkey.babyshield.services.OverlayService
@@ -29,13 +30,6 @@ class BabyShieldViewModel @Inject constructor(
     private val _hasOverlayPermission = MutableStateFlow(Settings.canDrawOverlays(context))
     val hasOverlayPermission = _hasOverlayPermission.asStateFlow()
 
-    private val _shouldRequestOverlayPermission = MutableStateFlow(false)
-    val shouldRequestOverlayPermission = _shouldRequestOverlayPermission.asStateFlow()
-
-    init {
-
-    }
-
     fun activeOverlay() {
         _overlayActive.value = !_overlayActive.value
         if (_overlayActive.value) {
@@ -46,20 +40,12 @@ class BabyShieldViewModel @Inject constructor(
         Log.i(TAG, "activeOverlay: ${_overlayActive.value}")
     }
 
-    fun requestOverlayPermission() {
-        _shouldRequestOverlayPermission.value = true
-    }
-
     fun checkOverlayPermission() {
         _hasOverlayPermission.value = Settings.canDrawOverlays(context)
+        Log.i(TAG, "checkOverlayPermission: checking ${_hasOverlayPermission.value}")
     }
 
-    fun onOverlayPermissionResult(isGranted: Boolean) {
-        _hasOverlayPermission.value = isGranted
-        _shouldRequestOverlayPermission.value = false
-    }
-
-    fun startOverlayService() {
+    private fun startOverlayService() {
         val intent = Intent(context, OverlayService::class.java)
         context.startForegroundService(intent)
     }

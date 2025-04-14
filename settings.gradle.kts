@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Baby Shield"
 include(":app")
- 
+include(":domain")
+include(":data")

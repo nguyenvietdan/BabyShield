@@ -9,4 +9,11 @@
     <string name="touch_blocking_is_active">Touch blocking is active. Press the lock button on the screen to unlock.</string>
     <string name="touch_blocking_is_not_active">Touch blocking is off. Tap the button above to enable touch blocking.</string>"
     <string name="need_to_grant_permission">You need to grant display permission over other apps to use the touch blocking feature.</string>
+
+    <!-- Notification -->
+    <string name="content_title">Block Screen Touch</string>
+    <string name="content_text">Touch blocking service is active</string>
+
+    <string name="permission_granted">Overlay permission granted</string>
+    <string name="permission_denied">Overlay permission denied</string>
 </resources>

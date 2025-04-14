@@ -13,8 +13,10 @@ hiltVersion = "2.51.1"
 hiltCompose = "1.2.0"
 navCompose = "2.8.9"
 javaxInject = "1"
-datastoreCoreAndroid = "1.1.4"
 workVersion = "2.9.1"
+appcompat = "1.7.0"
+material = "1.12.0"
+dataStoreVersion = "1.1.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -39,8 +41,10 @@ javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "j
 
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navCompose" }
 
-androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastoreCoreAndroid"}
-androidx-datastore-preferences-rxjava3 = { group = "androidx.datastore", name = "datastore-preferences-rxjava3", version.ref = "datastoreCoreAndroid"}
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "dataStoreVersion"}
+androidx-datastore-preferences-rxjava3 = { group = "androidx.datastore", name = "datastore-preferences-rxjava3", version.ref = "dataStoreVersion"}
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 
 [plugins]
@@ -50,4 +54,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 hilt-android = {id = "com.google.dagger.hilt.android", version.ref = "hiltVersion"}
+android-library = { id = "com.android.library", version.ref = "agp" }
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lá chắn cho bé</string>
+
+    <string name="block_touch_to_screen">Chặn chạm vào màn hình</string>
+    <string name="block_touch_content">Ứng dụng này giúp ngăn chặn việc chạm vào màn hình khi trẻ em đang xem video.</string>
+    <string name="disable">Tắt</string>
+    <string name="enable">Bật</string>
+    <string name="grant_permission">Cấp quyền hiển thị trên các ứng dụng khác</string>
+    <string name="touch_blocking_is_active">Chặn cảm ứng đang hoạt động. Nhấn nút khóa trên màn hình để mở khóa.</string>
+    <string name="touch_blocking_is_not_active">Chặn cảm ứng đang tắt. Nhấn vào nút bên trên để bật chặn cảm ứng.</string>"
+    <string name="need_to_grant_permission">Bạn cần cấp quyền hiển thị cho các ứng dụng khác để sử dụng tính năng chặn cảm ứng.</string>
+
+    <!-- Notification -->
+    <string name="content_title">Chặn Chạm Màn Hình</string>
+    <string name="content_text">Dịch vụ chặn chạm đang hoạt động</string>
+
+    <string name="permission_granted">Overlay permission granted</string>
+    <string name="permission_denied">Overlay permission denied</string>
+</resources>

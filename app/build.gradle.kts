@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.monkey.babyshield"
-        minSdk = 30
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -42,7 +42,8 @@ android {
 }
 
 dependencies {
-
+    implementation(project(":domain"))
+    implementation(project(":data"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -56,6 +57,7 @@ dependencies {
 
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
+
     kapt(libs.hilt.android.compiler)
 
     testImplementation(libs.junit)
