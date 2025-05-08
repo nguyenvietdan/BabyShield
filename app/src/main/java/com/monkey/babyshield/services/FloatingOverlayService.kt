@@ -218,7 +218,7 @@ class FloatingOverlayService : Service() {
             edgeMargin = margin
             if (floatingView.layoutParams is LayoutParams) {
                 withContext(Dispatchers.Main) {
-                    snapToEdge(floatingView.layoutParams as WindowManager.LayoutParams)
+                    snapToEdge(floatingView.layoutParams as LayoutParams)
                 }
             }
         }
@@ -242,12 +242,12 @@ class FloatingOverlayService : Service() {
         }
     }
 
-    private fun addOverlayToWindow(buttonParams: WindowManager.LayoutParams) {
+    private fun addOverlayToWindow(buttonParams: LayoutParams) {
         // Setup layout params for overlay
         val overlayParams = LayoutParams(
             LayoutParams.MATCH_PARENT,
             LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            LayoutParams.TYPE_APPLICATION_OVERLAY,
             LayoutParams.FLAG_NOT_FOCUSABLE or
                     LayoutParams.FLAG_NOT_TOUCHABLE or
                     LayoutParams.FLAG_LAYOUT_IN_SCREEN,
@@ -261,10 +261,10 @@ class FloatingOverlayService : Service() {
 
 
     private fun addLayoutParams(shouldAddedTouchable: Boolean) {
-        val params = overlayView.layoutParams as WindowManager.LayoutParams
+        val params = overlayView.layoutParams as LayoutParams
         params.flags =
-            if (shouldAddedTouchable) params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-            else params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+            if (shouldAddedTouchable) params.flags or LayoutParams.FLAG_NOT_TOUCHABLE
+            else params.flags and LayoutParams.FLAG_NOT_TOUCHABLE.inv()
         windowManager.updateViewLayout(overlayView, params)
     }
 

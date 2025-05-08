@@ -44,7 +44,6 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.monkey.babyshield.R
 import com.monkey.babyshield.presentations.theme.ActiveGreen
-import com.monkey.babyshield.presentations.theme.ActiveRed
 import com.monkey.babyshield.presentations.theme.BabyShieldTheme
 import com.monkey.babyshield.presentations.theme.InactiveRed
 import com.monkey.babyshield.presentations.viewmodel.BabyShieldViewModel

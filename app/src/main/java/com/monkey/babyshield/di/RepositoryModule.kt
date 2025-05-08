@@ -7,7 +7,6 @@ import com.monkey.domain.repository.BabyShieldDataSource
 import com.monkey.domain.repository.DefaultPreferenceValue
 import dagger.Module
 import dagger.Provides
-import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent

@@ -2,16 +2,10 @@ package com.monkey.babyshield.presentations.viewmodel
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import androidx.core.app.ActivityCompat.startActivityForResult
-import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startForegroundService
 import androidx.lifecycle.ViewModel
 import com.monkey.babyshield.services.FloatingOverlayService
-import com.monkey.babyshield.services.OverlayService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
