@@ -1,5 +1,8 @@
 package com.monkey.babyshield.services
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
@@ -15,6 +18,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import com.monkey.babyshield.R
 import com.monkey.babyshield.di.BabyShieldManagerEntryPoint
@@ -187,6 +191,7 @@ class FloatingOverlayService : Service() {
         }
     }
 
+    @SuppressLint("Recycle")
     private fun snapToEdge(params: LayoutParams) {
         val viewWidth = unlockButton.width
         val viewHeight = unlockButton.height
@@ -196,11 +201,37 @@ class FloatingOverlayService : Service() {
         val distanceToTopEdge = params.y
         val distanceToBottomEdge = currentScreenHeight - (params.y + viewHeight)
 
-        if (distanceToLeftEdge <= distanceToRightEdge) {
+        var targetX = if (distanceToLeftEdge <= distanceToRightEdge) {
+            edgeMargin
+        } else {
+            currentScreenWidth - viewWidth - edgeMargin
+        }
+
+        val startX = params.x
+
+        val animator = ValueAnimator.ofInt(startX, targetX)
+        animator.duration = 300 // 300ms
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.addUpdateListener { animation ->
+            params.x = animation.animatedValue as Int
+            windowManager.updateViewLayout(this.floatingView, params)
+        }
+        /*animator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                // Nếu bạn cần làm gì đó sau animation kết thúc
+                Log.d("Animation", "Done moving to edge")
+            }
+        })*/
+        Handler(Looper.getMainLooper()).post {
+            animator.start()
+        }
+
+
+        /*if (distanceToLeftEdge <= distanceToRightEdge) {
             params.x = edgeMargin
         } else {
             params.x = currentScreenWidth - viewWidth - edgeMargin
-        }
+        }*/
 
         /*if (distanceToTopEdge <= distanceToBottomEdge) {
             params.y = edgeMargin
@@ -208,9 +239,9 @@ class FloatingOverlayService : Service() {
             params.y = currentScreenHeight - viewHeight - edgeMargin
         }*/
 
-        Handler(Looper.getMainLooper()).post {
+        /*Handler(Looper.getMainLooper()).post {
             windowManager.updateViewLayout(floatingView, params)
-        }
+        }*/
     }
 
     @SuppressLint("ResourceAsColor")
