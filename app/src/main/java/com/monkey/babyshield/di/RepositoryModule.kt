@@ -3,6 +3,7 @@ package com.monkey.babyshield.di
 import android.content.Context
 import com.monkey.data.repository.BabyShieldDataSourceImpl
 import com.monkey.data.repository.DefaultPreferenceValueImpl
+import com.monkey.domain.repository.BabyShieldDataSource
 import com.monkey.domain.repository.DefaultPreferenceValue
 import dagger.Module
 import dagger.Provides
@@ -25,5 +26,5 @@ class RepositoryModule {
     fun provideBabyShieldDataSource(
         @ApplicationContext context: Context,
         defaultPreferenceValue: DefaultPreferenceValue
-    ) = BabyShieldDataSourceImpl(context, defaultPreferenceValue)
+    ): BabyShieldDataSource = BabyShieldDataSourceImpl(context, defaultPreferenceValue)
 }

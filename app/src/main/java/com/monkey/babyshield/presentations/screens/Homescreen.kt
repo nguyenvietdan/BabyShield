@@ -1,5 +1,6 @@
 package com.monkey.babyshield.presentations.screens
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -12,16 +13,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,15 +44,23 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.monkey.babyshield.R
 import com.monkey.babyshield.presentations.theme.ActiveGreen
+import com.monkey.babyshield.presentations.theme.ActiveRed
 import com.monkey.babyshield.presentations.theme.BabyShieldTheme
 import com.monkey.babyshield.presentations.theme.InactiveRed
 import com.monkey.babyshield.presentations.viewmodel.BabyShieldViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
+fun HomeScreen(
+    viewModel: BabyShieldViewModel = hiltViewModel(),
+    drawerState: DrawerState
+) {
     val hasOverlayPermission by viewModel.hasOverlayPermission.collectAsState()
     val overlayActive by viewModel.overlayActive.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val overlaySettingsLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
             viewModel.checkOverlayPermission()
@@ -53,13 +71,33 @@ fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
             ).show()
         }
 
-    LaunchedEffect(Unit) {
-        viewModel.checkOverlayPermission() // initial check
+    DisposableEffect(Unit) {
+        viewModel.checkOverlayPermission()
+        onDispose {
+            viewModel.checkOverlayPermission()
+        }
+
     }
 
-    DisposableEffect(Unit) { onDispose { } }
-
-    Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(text = stringResource(R.string.app_name)) },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            drawerState.apply {
+                                if (isOpen) close() else open()
+                            }
+                        }
+                    }) {
+                        Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu")
+                    }
+                }
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -86,7 +124,7 @@ fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
                     onClick = {
                         viewModel.activeOverlay()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (overlayActive) ActiveGreen else InactiveRed),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (overlayActive) InactiveRed else ActiveGreen),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
@@ -122,6 +160,7 @@ fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
@@ -141,6 +180,6 @@ fun HomeScreen(viewModel: BabyShieldViewModel = hiltViewModel()) {
 @Composable
 fun HomeScreenPreview() {
     BabyShieldTheme {
-        HomeScreen()
+        HomeScreen(drawerState = rememberDrawerState(DrawerValue.Closed))
     }
 }

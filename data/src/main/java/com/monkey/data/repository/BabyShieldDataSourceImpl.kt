@@ -9,9 +9,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.monkey.domain.repository.BabyShieldDataSource
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.DATA_NAME
+import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ALPHA
+import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_EDGE_MARGIN
+import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ICON_SIZE
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_IS_LOCKED
 import com.monkey.domain.repository.DefaultPreferenceValue
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +39,16 @@ class BabyShieldDataSourceImpl @Inject constructor(
     private val _isLocked = IS_LOCKED.createFlow(defaultValue.isLocked)
     override val isLocked: StateFlow<Boolean> = _isLocked.asStateFlow()
 
-    override suspend fun save(key: String, value: Unit) {
+    private val _edgeMargin = EDGE_MARGIN.createFlow(defaultValue.edgeMargin)
+    override val edgeMargin: StateFlow<Int> = _edgeMargin.asStateFlow()
+
+    private val _alpha = ALPHA.createFlow(defaultValue.alphaValue)
+    override val alpha: StateFlow<Int> = _alpha.asStateFlow()
+
+    private val _iconSize = ICON_SIZE.createFlow(defaultValue.iconSize)
+    override val iconSize: StateFlow<Int> = _iconSize.asStateFlow()
+
+    override suspend fun save(key: String, value: Any) {
         context.dataStore.edit { preferences ->
             Log.i(TAG, "save: preference $key, $value")
             when (key) {
@@ -43,6 +56,22 @@ class BabyShieldDataSourceImpl @Inject constructor(
                     preferences[IS_LOCKED] = value as Boolean
                     _isLocked.value = value
                 }
+
+                KEY_EDGE_MARGIN -> {
+                    preferences[EDGE_MARGIN] = value as Int
+                    _edgeMargin.value = value
+                }
+
+                KEY_ALPHA -> {
+                    preferences[ALPHA] = value as Int
+                    _alpha.value = value
+                }
+
+                KEY_ICON_SIZE -> {
+                    preferences[ICON_SIZE] = value as Int
+                    _iconSize.value = value
+                }
+
                 else -> Log.i(TAG, "save: not support key $key")
             }
         }
@@ -75,11 +104,14 @@ class BabyShieldDataSourceImpl @Inject constructor(
         if (value is R) value else default
     }
 
-    private inline fun <reified  T> Preferences.Key<T>.createFlow(default: T): MutableStateFlow<T> {
+    private inline fun <reified T> Preferences.Key<T>.createFlow(default: T): MutableStateFlow<T> {
         return MutableStateFlow(this.default(default))
     }
 
     companion object {
         private val IS_LOCKED = booleanPreferencesKey(KEY_IS_LOCKED)
+        private val EDGE_MARGIN = intPreferencesKey(KEY_EDGE_MARGIN)
+        private val ALPHA = intPreferencesKey(KEY_ALPHA)
+        private val ICON_SIZE = intPreferencesKey(KEY_ICON_SIZE)
     }
 }

@@ -52,13 +52,17 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.appcompat)
 
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.androidx.lifecycle.service)
 
     kapt(libs.hilt.android.compiler)
+
+    implementation(libs.chrisbanes.snapper)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

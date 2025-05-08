@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:name=".BabyShieldApplication"
         android:allowBackup="true"
@@ -15,6 +17,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BabyShield"
         tools:targetApi="31">
+        <service
+            android:name=".services.FloatingOverlayService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+            />
+
         <activity
             android:name=".presentations.MainActivity"
             android:exported="true"
@@ -25,10 +34,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <service
             android:name=".services.OverlayService"
-            android:exported="false"
             android:enabled="true"
+            android:exported="false"
             android:foregroundServiceType="dataSync"
             tools:ignore="ForegroundServicePermission" />
     </application>

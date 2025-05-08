@@ -1,12 +1,16 @@
 package com.monkey.babyshield.presentations.viewmodel
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import android.content.Intent
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.lifecycle.ViewModel
+import com.monkey.babyshield.services.FloatingOverlayService
 import com.monkey.babyshield.services.OverlayService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,33 +24,45 @@ class BabyShieldViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val TAG = "BabyShieldViewModel"
+
     private val _overlayActive = MutableStateFlow(false)
     val overlayActive = _overlayActive.asStateFlow()
+
     private val _hasOverlayPermission = MutableStateFlow(Settings.canDrawOverlays(context))
     val hasOverlayPermission = _hasOverlayPermission.asStateFlow()
 
-    private fun startOverlayService() {
-        val intent = Intent(context, OverlayService::class.java)
-        ContextCompat.startForegroundService(context, intent)
-    }
-
-    private fun stopOverlayService() {
-        val intent = Intent(context, OverlayService::class.java)
-        context.stopService(intent)
+    init {
+        _overlayActive.value = FloatingOverlayService.isRunning
     }
 
     fun activeOverlay() {
-        _overlayActive.value = !_overlayActive.value.also { isActive ->
-            if (isActive) {
-                stopOverlayService()
-            } else {
-                startOverlayService()
-            }
+        if (_overlayActive.value) {
+            stopOverlayService()
+        } else {
+            startOverlayService()
         }
-        Log.i(TAG, "activeOverlay: ${_overlayActive.value} ")
+        _overlayActive.value = !_overlayActive.value
+        Log.i(TAG, "activeOverlay: ${_overlayActive.value} FloatingOverlayService.isRunning ${FloatingOverlayService.isRunning}")
     }
 
-    fun checkOverlayPermission() = _hasOverlayPermission.value.also { isPermission ->
-        Log.i(TAG, "checkOverlayPermission: checking $isPermission")
+    fun checkOverlayPermission() {
+        _hasOverlayPermission.value = Settings.canDrawOverlays(context)
+        Log.i(TAG, "checkOverlayPermission: checking ${_hasOverlayPermission.value}")
     }
+
+    private fun startOverlayService() {
+        val intent = Intent(context, FloatingOverlayService::class.java)
+        context.startForegroundService(intent)
+    }
+
+    private fun stopOverlayService() {
+        val intent = Intent(context, FloatingOverlayService::class.java)
+        context.stopService(intent)
+    }
+
+
+    companion object {
+        private const val OVERLAY_PERMISSION_REQ_CODE = 1234
+    }
+
 }
