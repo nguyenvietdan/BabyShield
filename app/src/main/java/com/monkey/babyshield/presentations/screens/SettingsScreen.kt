@@ -1,6 +1,5 @@
 package com.monkey.babyshield.presentations.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -174,8 +173,8 @@ fun SettingsScreenContentExtend(
                 )
             )
         }
-        
-        item { 
+
+        item {
             SettingGroup(
                 title = "Unlock button Settings",
                 items = listOf(
@@ -281,7 +280,6 @@ fun WheelPickerDialog(
     onConfirm: (Int) -> Unit
 ) {
     var currentIndex by remember { mutableIntStateOf(selected) }
-    Log.i("dan.nv", "WheelPickerDialog: $selected $currentIndex")
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {

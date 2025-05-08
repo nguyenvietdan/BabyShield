@@ -119,12 +119,7 @@ class OverlayService : Service() {
                 }
             }
             addView(composeView)
-
         }
-
-
-
-
     }
 
     @SuppressLint("ClickableViewAccessibility", "ResourceAsColor")

@@ -33,9 +33,6 @@ internal fun DefaultWheelMinutesTimePicker(
     onSelectedMinutes: (Int) -> Unit = {}
 ) {
     val minutes = (minTime..maxTime).map {
-        Log.i("dan.nv", "DefaultWheelMinutesTimePicker: startTime $startTime currentValue $it" +
-                " text: ${it.toString().padStart(2, '0')}" +
-                " index ${it - minTime}")
         Minute(
             text = it.toString().padStart(2, '0'),
             value = it,
@@ -54,8 +51,6 @@ internal fun DefaultWheelMinutesTimePicker(
         }
         Row{
             //Minute
-            Log.e("dan.nv", "DefaultWheelMinutesTimePicker startTime $startTime" +
-                    "startIndex : ${minutes.find { it.value == startTime }?.index ?: 0}", )
             val texts = minutes.map { it.text }
             WheelPicker(
                 modifier = modifier,

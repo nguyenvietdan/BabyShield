@@ -56,7 +56,6 @@ fun WheelPicker(
     LaunchedEffect(isScrollInProgress, count) {
         if(!isScrollInProgress) {
             onScrollFinished(calculateSnappedItemIndex(snapperLayoutInfo) ?: startIndex)?.let {
-                Log.i("dan.nv", "WheelPicker: scroll to $it")
                 lazyListState.scrollToItem(it)
             }
         }
@@ -75,7 +74,6 @@ fun WheelPicker(
                 border = selectorProperties.border().value
             ) {}
         }
-        Log.e("dan.nv", "WheelPicker: startIndex $startIndex", )
         LazyColumn(
             modifier = Modifier
                 .height(size.height)
@@ -87,7 +85,6 @@ fun WheelPicker(
             )
         ){
             items(count){ index ->
-                Log.i("dan.nv", "WheelPicker: index in items $index")
                 val rotationX = calculateAnimatedRotationX(
                     lazyListState = lazyListState,
                     snapperLayoutInfo = snapperLayoutInfo,
@@ -127,7 +124,6 @@ private fun calculateSnappedItemIndex(snapperLayoutInfo: SnapperLayoutInfo): Int
             currentItemIndex ++
         }
     }
-    Log.i("dan.nv", "calculateSnappedItemIndex: $currentItemIndex")
     return currentItemIndex
 }
 

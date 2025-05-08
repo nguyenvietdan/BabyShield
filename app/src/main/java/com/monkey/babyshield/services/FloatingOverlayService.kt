@@ -71,10 +71,11 @@ class FloatingOverlayService : Service() {
             observeEdgeMarginChanges(sharedPrefs.edgeMargin)
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            sharedPrefs.alpha.collectLatest {
-                unlockButton.alpha = it.toFloat() / 100 // 0.7
-            }
+        CoroutineScope(Dispatchers.Main).launch {
+            sharedPrefs.alpha
+                .collectLatest {
+                    unlockButton.alpha = it.toFloat() / 100
+                }
         }
     }
 
@@ -136,7 +137,7 @@ class FloatingOverlayService : Service() {
         val floatingParams = LayoutParams(
             LayoutParams.WRAP_CONTENT,
             LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            LayoutParams.TYPE_APPLICATION_OVERLAY,
             LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
