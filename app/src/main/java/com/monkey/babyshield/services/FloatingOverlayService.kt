@@ -1,16 +1,12 @@
 package com.monkey.babyshield.services
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -27,8 +23,10 @@ import com.monkey.domain.repository.BabyShieldDataSource
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
 class FloatingOverlayService : Service() {
@@ -70,13 +68,9 @@ class FloatingOverlayService : Service() {
         setupOverlayView()
         isRunning = true
         CoroutineScope(Dispatchers.IO).launch {
-            sharedPrefs.edgeMargin.collectLatest {
-                edgeMargin = it
-                if (floatingView.layoutParams is LayoutParams) {
-                    snapToEdge(floatingView.layoutParams as WindowManager.LayoutParams)
-                }
-            }
+            observeEdgeMarginChanges(sharedPrefs.edgeMargin)
         }
+
         CoroutineScope(Dispatchers.IO).launch {
             sharedPrefs.alpha.collectLatest {
                 unlockButton.alpha = it.toFloat() / 100 // 0.7
@@ -142,7 +136,7 @@ class FloatingOverlayService : Service() {
         val floatingParams = LayoutParams(
             LayoutParams.WRAP_CONTENT,
             LayoutParams.WRAP_CONTENT,
-            LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
@@ -191,6 +185,9 @@ class FloatingOverlayService : Service() {
         }
     }
 
+    /**
+     * Running on UI thread
+     */
     @SuppressLint("Recycle")
     private fun snapToEdge(params: LayoutParams) {
         val viewWidth = unlockButton.width
@@ -198,8 +195,6 @@ class FloatingOverlayService : Service() {
 
         val distanceToLeftEdge = params.x
         val distanceToRightEdge = currentScreenWidth - (params.x + viewWidth)
-        val distanceToTopEdge = params.y
-        val distanceToBottomEdge = currentScreenHeight - (params.y + viewHeight)
 
         var targetX = if (distanceToLeftEdge <= distanceToRightEdge) {
             edgeMargin
@@ -207,41 +202,25 @@ class FloatingOverlayService : Service() {
             currentScreenWidth - viewWidth - edgeMargin
         }
 
-        val startX = params.x
-
-        val animator = ValueAnimator.ofInt(startX, targetX)
+        val animator = ValueAnimator.ofInt(params.x, targetX)
         animator.duration = 300 // 300ms
         animator.interpolator = AccelerateDecelerateInterpolator()
         animator.addUpdateListener { animation ->
             params.x = animation.animatedValue as Int
             windowManager.updateViewLayout(this.floatingView, params)
         }
-        /*animator.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                // Nếu bạn cần làm gì đó sau animation kết thúc
-                Log.d("Animation", "Done moving to edge")
+        animator.start()
+    }
+
+    private suspend fun observeEdgeMarginChanges(edgeMarginFlow: Flow<Int>) {
+        edgeMarginFlow.collectLatest { margin ->
+            edgeMargin = margin
+            if (floatingView.layoutParams is LayoutParams) {
+                withContext(Dispatchers.Main) {
+                    snapToEdge(floatingView.layoutParams as WindowManager.LayoutParams)
+                }
             }
-        })*/
-        Handler(Looper.getMainLooper()).post {
-            animator.start()
         }
-
-
-        /*if (distanceToLeftEdge <= distanceToRightEdge) {
-            params.x = edgeMargin
-        } else {
-            params.x = currentScreenWidth - viewWidth - edgeMargin
-        }*/
-
-        /*if (distanceToTopEdge <= distanceToBottomEdge) {
-            params.y = edgeMargin
-        } else {
-            params.y = currentScreenHeight - viewHeight - edgeMargin
-        }*/
-
-        /*Handler(Looper.getMainLooper()).post {
-            windowManager.updateViewLayout(floatingView, params)
-        }*/
     }
 
     @SuppressLint("ResourceAsColor")
@@ -257,10 +236,8 @@ class FloatingOverlayService : Service() {
     private fun updateUnlockButton() {
         if (isLocked) {
             unlockButton.setImageResource(R.drawable.ic_lock)
-            //overlayView.setBackgroundColor(0x00000000) // Semi-transparent black
         } else {
             unlockButton.setImageResource(R.drawable.ic_unlock)
-            //overlayView.setBackgroundColor(0x00000000) // Fully transparent
         }
     }
 
@@ -269,7 +246,7 @@ class FloatingOverlayService : Service() {
         val overlayParams = LayoutParams(
             LayoutParams.MATCH_PARENT,
             LayoutParams.MATCH_PARENT,
-            LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             LayoutParams.FLAG_NOT_FOCUSABLE or
                     LayoutParams.FLAG_NOT_TOUCHABLE or
                     LayoutParams.FLAG_LAYOUT_IN_SCREEN,
