@@ -1,6 +1,7 @@
 package com.monkey.data.repository
 
 import android.content.Context
+import android.graphics.Color
 import android.util.Log
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
@@ -10,13 +11,16 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.monkey.domain.repository.BabyShieldDataSource
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.DATA_NAME
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ALPHA
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_EDGE_MARGIN
+import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ICON_COLOR
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ICON_SIZE
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_IS_LOCKED
+import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_POSITION_Y
 import com.monkey.domain.repository.DefaultPreferenceValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +52,12 @@ class BabyShieldDataSourceImpl @Inject constructor(
     private val _iconSize = ICON_SIZE.createFlow(defaultValue.iconSize)
     override val iconSize: StateFlow<Int> = _iconSize.asStateFlow()
 
+    private val _iconColor = ICON_COLOR.createFlow(defaultValue.iconColor.toLong())
+    override val iconColor: StateFlow<Long> = _iconColor.asStateFlow()
+
+    private val _positionY = POSITION_Y.createFlow(defaultValue.position.y)
+    override val positionY: StateFlow<Int> = _positionY.asStateFlow()
+
     override suspend fun save(key: String, value: Any) {
         context.dataStore.edit { preferences ->
             Log.i(TAG, "save: preference $key, $value")
@@ -70,6 +80,16 @@ class BabyShieldDataSourceImpl @Inject constructor(
                 KEY_ICON_SIZE -> {
                     preferences[ICON_SIZE] = value as Int
                     _iconSize.value = value
+                }
+
+                KEY_ICON_COLOR -> {
+                    preferences[ICON_COLOR] = value as Long
+                    _iconColor.value = value
+                }
+
+                KEY_POSITION_Y -> {
+                    preferences[POSITION_Y] = value as Int
+                    _positionY.value = value
                 }
 
                 else -> Log.i(TAG, "save: not support key $key")
@@ -113,5 +133,7 @@ class BabyShieldDataSourceImpl @Inject constructor(
         private val EDGE_MARGIN = intPreferencesKey(KEY_EDGE_MARGIN)
         private val ALPHA = intPreferencesKey(KEY_ALPHA)
         private val ICON_SIZE = intPreferencesKey(KEY_ICON_SIZE)
+        private val ICON_COLOR = longPreferencesKey(KEY_ICON_COLOR)
+        private val POSITION_Y = intPreferencesKey(KEY_POSITION_Y)
     }
 }

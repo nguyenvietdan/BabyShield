@@ -1,20 +1,31 @@
 package com.monkey.babyshield.presentations.screens
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -38,15 +50,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.monkey.babyshield.common.LockIconSize
 import com.monkey.babyshield.common.SettingSwitchItemData
 import com.monkey.babyshield.common.SettingValueItemData
 import com.monkey.babyshield.common.SettingsItemData
 import com.monkey.babyshield.presentations.components.DefaultWheelMinutesTimePicker
+import com.monkey.babyshield.presentations.theme.InactiveGreen
 import com.monkey.babyshield.presentations.viewmodel.SettingsViewModel
 import com.monkey.babyshield.presentations.viewmodel.WheelPickerType
+import com.monkey.babyshield.utils.getLocalizedString
 import kotlinx.coroutines.launch
 import kotlin.math.min
 
@@ -133,21 +149,48 @@ fun SettingsScreenContentExtend(
             else -> 0
         }
 
-        WheelPickerDialog(
-            selected = selectedValue,
-            minValue = minValue,
-            maxValue = maxValue,
-            onDismiss = { settingsViewModel.closeWheelPickerSheet() },
-            onConfirm = { value ->
-                when (editingType) {
-                    WheelPickerType.EDGE_MARGIN -> settingsViewModel.updateEdgeMargin(value)
-                    WheelPickerType.ALPHA -> settingsViewModel.updateAlpha(value)
-                    WheelPickerType.ICON_SIZE -> settingsViewModel.updateIconSize(value)
-                    else -> {}
-                }
-                settingsViewModel.closeWheelPickerSheet()
+        when (editingType) {
+            WheelPickerType.EDGE_MARGIN, WheelPickerType.ALPHA -> {
+                WheelPickerDialog(
+                    selected = selectedValue,
+                    minValue = minValue,
+                    maxValue = maxValue,
+                    onDismiss = { settingsViewModel.closeSheet() },
+                    onConfirm = { value ->
+                        when (editingType) {
+                            WheelPickerType.EDGE_MARGIN -> settingsViewModel.updateEdgeMargin(value)
+                            WheelPickerType.ALPHA -> settingsViewModel.updateAlpha(value)
+                            else -> {}
+                        }
+                        settingsViewModel.closeSheet()
+                    }
+                )
             }
-        )
+
+            WheelPickerType.ICON_SIZE -> {
+                SizeSettingsDialog(
+                    selected = iconSize,
+                    onDismiss = { settingsViewModel.closeSheet() },
+                    onConfirm = {
+                        settingsViewModel.updateIconSize(it)
+                        settingsViewModel.closeSheet()
+                    }
+                )
+            }
+            WheelPickerType.ICON_COLOR -> {
+                ColorSettings(
+                    Color.Red,
+                    onDismiss = { settingsViewModel.closeSheet() },
+                    onConfirm = {
+                        settingsViewModel.closeSheet()
+                    }
+                )
+            }
+
+            else -> {
+                Log.i("dan.nv", "SettingsScreenContentExtend: there is no option")
+            }
+        }
     }
 
     LazyColumn(
@@ -168,7 +211,7 @@ fun SettingsScreenContentExtend(
                         onToggle = { settingsViewModel.updateLocked(it) }
                     ),
                     SettingValueItemData("Edge margin", "$edgeMargin") {
-                        settingsViewModel.openWheelPickerSheet(WheelPickerType.EDGE_MARGIN)
+                        settingsViewModel.openSheet(WheelPickerType.EDGE_MARGIN)
                     }
                 )
             )
@@ -179,10 +222,13 @@ fun SettingsScreenContentExtend(
                 title = "Unlock button Settings",
                 items = listOf(
                     SettingValueItemData("Alpha", "$alphaValue") {
-                        settingsViewModel.openWheelPickerSheet(WheelPickerType.ALPHA)
+                        settingsViewModel.openSheet(WheelPickerType.ALPHA)
                     },
-                    SettingValueItemData("IconSize", "$iconSize") {
-                        settingsViewModel.openWheelPickerSheet(WheelPickerType.ICON_SIZE)
+                    SettingValueItemData("IconSize", LockIconSize.entries[iconSize].getLocalizedString()) {
+                        settingsViewModel.openSheet(WheelPickerType.ICON_SIZE)
+                    },
+                    SettingValueItemData("IconColor", "RED") {
+                        settingsViewModel.openSheet(WheelPickerType.ICON_COLOR)
                     }
                 )
             )
@@ -303,4 +349,109 @@ fun WheelPickerDialog(
             )
         }
     )
+}
+
+@Composable
+fun SizeSettingsDialog(
+    selected: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    var currentIndex by remember { mutableIntStateOf(selected) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(currentIndex) }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        title = { Text(text = "Select size") },
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                LockIconSize.entries.toTypedArray().forEachIndexed { index, size ->
+                    TextButton(
+                        onClick = { currentIndex = index },
+                        shape = ButtonDefaults.textShape,
+                        colors = if (currentIndex == index) {
+                            ButtonDefaults.textButtonColors().copy(containerColor = InactiveGreen)
+                        } else {
+                            ButtonDefaults.textButtonColors()
+                        },
+                        contentPadding = PaddingValues(vertical = 16.dp, horizontal = 32.dp)
+                    ) {
+                        Text(size.getLocalizedString().uppercase())
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun ColorSettings(
+    selected: Color,
+    onDismiss: () -> Unit,
+    onConfirm: (Color) -> Unit
+) {
+    val colors = listOf(
+        Color.Red,
+        Color.Green,
+        Color.Blue,
+        Color.Yellow,
+        Color.Cyan,
+        Color.Magenta,
+        Color.LightGray,
+        Color.DarkGray,
+        Color.White,
+        Color.Gray
+    )
+    var selectedColor by remember { mutableStateOf(selected) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedColor) }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        title = { Text(text = "Select the color")},
+        text = {
+            Row(
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                colors.forEachIndexed{ index, color ->
+                    if (index != 0 ) Spacer(modifier = Modifier.width(2.dp))
+                    Box(
+                     modifier = Modifier
+                         .size(40.dp)
+                         .background(color = color, shape = RoundedCornerShape(10.dp))
+                         .border(width = 2.dp, color = if (color == selectedColor) Color.Black else Color.Transparent, shape = CircleShape)
+                         .clickable { selectedColor = color }
+                         .padding(horizontal = 2.dp)
+                    )
+                }
+            }
+        }
+    )
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun SizeSettingsDialogPreview() {
+    ColorSettings(
+        Color.Red,
+        {}
+    ) { }
 }

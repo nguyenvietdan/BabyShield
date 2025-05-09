@@ -1,5 +1,6 @@
 package com.monkey.babyshield.utils
 
+import android.content.Context
 import androidx.navigation.NavHostController
 import com.monkey.babyshield.R
 import com.monkey.babyshield.presentations.navigation.Screen
@@ -18,4 +19,8 @@ fun getStringByRoute(route: String) = when (route) {
     Screen.HomeScreen.route -> R.string.home_screen_title
     Screen.SettingsScreen.route -> R.string.settings_screen_title
     else -> R.string.app_name
+}
+
+fun dpToPx(context: Context, dp: Int): Int {
+    return (dp * context.resources.displayMetrics.density).toInt()
 }

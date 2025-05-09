@@ -21,11 +21,11 @@ class SettingsViewModel @Inject constructor(
     private val _editingType = MutableStateFlow<WheelPickerType?>(null)
     val editingType:StateFlow<WheelPickerType?> = _editingType.asStateFlow()
 
-    fun openWheelPickerSheet(type: WheelPickerType) {
+    fun openSheet(type: WheelPickerType) {
         _editingType.value = type
     }
 
-    fun closeWheelPickerSheet() {
+    fun closeSheet() {
         _editingType.value = null
     }
 
@@ -52,4 +52,4 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
-enum class WheelPickerType { EDGE_MARGIN, ALPHA, ICON_SIZE }
+enum class WheelPickerType { EDGE_MARGIN, ALPHA, ICON_SIZE, ICON_COLOR }

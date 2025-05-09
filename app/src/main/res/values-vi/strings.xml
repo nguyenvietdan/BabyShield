@@ -55,4 +55,9 @@
 
     <!-- Notification -->
     <string name="notification_text">Touch blocker is active. Tap to open the app.</string>
+
+    <!-- IconSize -->
+    <string name="small_icon_size">Nhỏ</string>"
+    <string name="medium_icon_size">Vừa</string>"
+    <string name="large_icon_size">Lớn</string>"
 </resources>

@@ -1,5 +1,7 @@
 package com.monkey.data.repository
 
+import android.graphics.Color
+import android.graphics.Point
 import com.monkey.data.local.DefaultValue
 import com.monkey.domain.repository.DefaultPreferenceValue
 
@@ -13,4 +15,8 @@ class DefaultPreferenceValueImpl: DefaultPreferenceValue {
         get() = DefaultValue.ALPHA
     override val iconSize: Int
         get() = DefaultValue.ICON_SIZE
+    override val iconColor: Int
+        get() = Color.GREEN
+    override val position: Point
+        get() = Point(edgeMargin, 120)
 }
