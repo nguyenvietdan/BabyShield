@@ -19,8 +19,6 @@ import android.view.WindowManager.LayoutParams
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
 import com.monkey.babyshield.R
 import com.monkey.babyshield.di.BabyShieldManagerEntryPoint
 import com.monkey.babyshield.framework.NotificationHelper
