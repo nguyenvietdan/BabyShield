@@ -1,7 +1,7 @@
 package com.monkey.data.repository
 
 import android.content.Context
-import android.graphics.Color
+import android.graphics.Point
 import android.util.Log
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
@@ -12,7 +12,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.monkey.data.utils.Utils.POSITION_SEPARATOR
+import com.monkey.data.utils.Utils.toPosition
 import com.monkey.domain.repository.BabyShieldDataSource
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.DATA_NAME
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ALPHA
@@ -20,7 +23,7 @@ import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_EDGE_MARG
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ICON_COLOR
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_ICON_SIZE
 import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_IS_LOCKED
-import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_POSITION_Y
+import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_POSITION
 import com.monkey.domain.repository.DefaultPreferenceValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,11 +55,20 @@ class BabyShieldDataSourceImpl @Inject constructor(
     private val _iconSize = ICON_SIZE.createFlow(defaultValue.iconSize)
     override val iconSize: StateFlow<Int> = _iconSize.asStateFlow()
 
-    private val _iconColor = ICON_COLOR.createFlow(defaultValue.iconColor.toLong())
-    override val iconColor: StateFlow<Long> = _iconColor.asStateFlow()
+    private val _iconColor = ICON_COLOR.createFlow(defaultValue.iconColor)
+    override val iconColor: StateFlow<Int> = _iconColor.asStateFlow()
 
-    private val _positionY = POSITION_Y.createFlow(defaultValue.position.y)
-    override val positionY: StateFlow<Int> = _positionY.asStateFlow()
+    private val _position = POSITION.createPositionFlow(defaultValue.position.toPosition())
+    override val position: StateFlow<Point> = _position.asStateFlow()
+        /*_position.map { str ->
+        str.split(POSITION_SEPARATOR).run {
+            Point(get(0).toInt(), get(1).toInt())
+        }
+    }.stateIn(
+        scope = CoroutineScope(Dispatchers.Default),
+        started = SharingStarted.Eagerly,
+        initialValue = Point(defaultValue.position)
+    )*/
 
     override suspend fun save(key: String, value: Any) {
         context.dataStore.edit { preferences ->
@@ -83,13 +95,14 @@ class BabyShieldDataSourceImpl @Inject constructor(
                 }
 
                 KEY_ICON_COLOR -> {
-                    preferences[ICON_COLOR] = value as Long
+                    preferences[ICON_COLOR] = value as Int
                     _iconColor.value = value
                 }
 
-                KEY_POSITION_Y -> {
-                    preferences[POSITION_Y] = value as Int
-                    _positionY.value = value
+                KEY_POSITION -> {
+                    val positionString = (value as Point).toPosition()
+                    preferences[POSITION] = positionString
+                    _position.value = value
                 }
 
                 else -> Log.i(TAG, "save: not support key $key")
@@ -128,12 +141,20 @@ class BabyShieldDataSourceImpl @Inject constructor(
         return MutableStateFlow(this.default(default))
     }
 
+    private inline fun <reified T> Preferences.Key<T>.createPositionFlow(default: T): MutableStateFlow<Point> {
+        val value = this.default(default)
+        if (value !is String) return MutableStateFlow(defaultValue.position)
+        return MutableStateFlow((value as String).split(POSITION_SEPARATOR).run {
+            Point(get(0).toInt(), get(1).toInt())
+        })
+    }
+
     companion object {
         private val IS_LOCKED = booleanPreferencesKey(KEY_IS_LOCKED)
         private val EDGE_MARGIN = intPreferencesKey(KEY_EDGE_MARGIN)
         private val ALPHA = intPreferencesKey(KEY_ALPHA)
         private val ICON_SIZE = intPreferencesKey(KEY_ICON_SIZE)
-        private val ICON_COLOR = longPreferencesKey(KEY_ICON_COLOR)
-        private val POSITION_Y = intPreferencesKey(KEY_POSITION_Y)
+        private val ICON_COLOR = intPreferencesKey(KEY_ICON_COLOR)
+        private val POSITION = stringPreferencesKey(KEY_POSITION)
     }
 }

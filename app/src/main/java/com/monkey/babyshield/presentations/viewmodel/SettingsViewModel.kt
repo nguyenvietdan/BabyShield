@@ -45,6 +45,10 @@ class SettingsViewModel @Inject constructor(
         updateSharedPreference(BabyShieldDataSource.KEY_ICON_SIZE, iconSize)
     }
 
+    fun updateIconColor(color: Int) {
+        updateSharedPreference(BabyShieldDataSource.KEY_ICON_COLOR, color)
+    }
+
     private fun updateSharedPreference(key: String, value: Any) {
         viewModelScope.launch {
             sharedPrefs.save(key, value)

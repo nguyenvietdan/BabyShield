@@ -16,7 +16,7 @@ class DefaultPreferenceValueImpl: DefaultPreferenceValue {
     override val iconSize: Int
         get() = DefaultValue.ICON_SIZE
     override val iconColor: Int
-        get() = Color.GREEN
+        get() = -16711681
     override val position: Point
         get() = Point(edgeMargin, 120)
 }

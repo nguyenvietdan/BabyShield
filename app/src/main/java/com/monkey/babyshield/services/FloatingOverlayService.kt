@@ -1,13 +1,13 @@
 package com.monkey.babyshield.services
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.graphics.Point
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
@@ -19,12 +19,13 @@ import android.view.WindowManager.LayoutParams
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
+import androidx.core.animation.doOnEnd
 import com.monkey.babyshield.R
 import com.monkey.babyshield.di.BabyShieldManagerEntryPoint
 import com.monkey.babyshield.framework.NotificationHelper
 import com.monkey.babyshield.utils.dpToPx
 import com.monkey.domain.repository.BabyShieldDataSource
-import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_POSITION_Y
+import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_POSITION
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,8 +67,6 @@ class FloatingOverlayService : Service() {
         isLocked = sharedPrefs.isLocked.value
         edgeMargin = sharedPrefs.edgeMargin.value
 
-        Log.i(TAG, "onCreate: isLocked $isLocked")
-
         NotificationHelper.createNotificationChannel(applicationContext)
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         setupOverlayView()
@@ -85,6 +84,10 @@ class FloatingOverlayService : Service() {
                 .collectLatest {
                     unlockButton.alpha = it.toFloat() / 100
                 }
+        }
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            observeColorChanged(sharedPrefs.iconColor)
         }
     }
 
@@ -151,8 +154,8 @@ class FloatingOverlayService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = edgeMargin
-            y = sharedPrefs.positionY.value
+            x = sharedPrefs.position.value.x
+            y = sharedPrefs.position.value.y
         }
         setTouchListener(floatingParams)
         addOverlayToWindow(floatingParams)
@@ -203,6 +206,10 @@ class FloatingOverlayService : Service() {
         val viewWidth = unlockButton.width
         val viewHeight = unlockButton.height
 
+        getFloatingAnimation(params, viewWidth).start()
+    }
+
+    private fun getFloatingAnimation(params: LayoutParams, viewWidth: Int): ValueAnimator {
         val distanceToLeftEdge = params.x
         val distanceToRightEdge = currentScreenWidth - (params.x + viewWidth)
 
@@ -212,23 +219,19 @@ class FloatingOverlayService : Service() {
             currentScreenWidth - viewWidth - edgeMargin
         }
 
-        val animator = ValueAnimator.ofInt(params.x, targetX)
-        animator.duration = ANIMATION_DURATION_MS // 300ms
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.addUpdateListener { animation ->
-            params.x = animation.animatedValue as Int
-            windowManager.updateViewLayout(this.floatingView, params)
-        }
-        animator.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                super.onAnimationEnd(animation)
+        return ValueAnimator.ofInt(params.x, targetX).apply {
+            duration = ANIMATION_DURATION_MS
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { animation ->
+                params.x = animation.animatedValue as Int
+                windowManager.updateViewLayout(floatingView, params)
+            }
+            doOnEnd {
                 CoroutineScope(Dispatchers.IO).launch {
-                    sharedPrefs.save(KEY_POSITION_Y, params.y)
-                    // todo save position to shared prefs
+                    sharedPrefs.save(KEY_POSITION, Point(params.x, params.y))
                 }
             }
-        })
-        animator.start()
+        }
     }
 
     private suspend fun observeEdgeMarginChanges(edgeMarginFlow: Flow<Int>) {
@@ -249,13 +252,15 @@ class FloatingOverlayService : Service() {
     private fun scaleIconSizeWithAnimation(iconSize: Int) {
         val targetScale = iconSize.toFloat() + 1
         val startScale = unlockButton.scaleX
-        val animator = ValueAnimator.ofFloat(startScale, targetScale)
-        animator.duration = ANIMATION_DURATION_MS
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.addUpdateListener { animation ->
-            unlockButton.scaleX = animation.animatedValue as Float
-            unlockButton.scaleY = animation.animatedValue as Float
+        val animator = ValueAnimator.ofFloat(startScale, targetScale).apply {
+            duration = ANIMATION_DURATION_MS
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { animation ->
+                unlockButton.scaleX = animation.animatedValue as Float
+                unlockButton.scaleY = animation.animatedValue as Float
+            }
         }
+
         animator.start()
     }
 
@@ -268,21 +273,41 @@ class FloatingOverlayService : Service() {
         val targetSize = dpToPx(applicationContext, iconSize * DEFAULT_ICON_SIZE)
         val start = params.width
         if (start == targetSize) return
-        val animator = ValueAnimator.ofInt(start, targetSize)
-        animator.duration = ANIMATION_DURATION_MS
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.addUpdateListener { animation ->
-            params.width = animation.animatedValue as Int
-            params.height = animation.animatedValue as Int
-            unlockButton.layoutParams = params
+
+        val animator = ValueAnimator.ofInt(start, targetSize).apply {
+            duration = ANIMATION_DURATION_MS
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { animation ->
+                params.width = animation.animatedValue as Int
+                params.height = animation.animatedValue as Int
+                unlockButton.layoutParams = params
+            }
         }
-        animator.start()
+
+        val animatorSet = AnimatorSet()
+        animatorSet.playTogether(animator)
+        val floatingParams = floatingView.layoutParams as LayoutParams
+
+        animatorSet.playTogether(getFloatingAnimation(floatingParams, targetSize))
+
+        animatorSet.start()
+
+        //animator.start()
     }
 
     private suspend fun observeLockIconSize(lockIconSizeFlow: Flow<Int>) {
         lockIconSizeFlow.collectLatest { size ->
             withContext(Dispatchers.Main) {
                 updateSizeWithAnimation(size + 1)
+            }
+        }
+    }
+    
+    private suspend fun observeColorChanged(colorFlow: Flow<Int>) {
+        colorFlow.collectLatest { color ->
+            Log.i(TAG, "observeColorChanged: color changed $color")
+            withContext(Dispatchers.Main) {
+                unlockButton.setColorFilter(color)
             }
         }
     }

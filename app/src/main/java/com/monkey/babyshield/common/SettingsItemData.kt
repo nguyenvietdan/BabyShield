@@ -18,6 +18,12 @@ data class SettingValueItemData(
     val onClick: () -> Unit
 ) : SettingsItemData
 
+data class SettingValueColorItemData(
+    val title: String,
+    val value: Int,
+    val onClick: () -> Unit
+) : SettingsItemData
+
 data class SettingsActionItem(
     val title: String,
     val onClick: () -> Unit
