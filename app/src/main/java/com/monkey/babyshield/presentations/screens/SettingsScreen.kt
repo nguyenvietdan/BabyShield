@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -495,14 +496,23 @@ fun ColorSettings(
                      modifier = Modifier
                          .size(40.dp)
                          .background(color = color, shape = RoundedCornerShape(10.dp))
-                         .border(
+                         /*.border(
                              width = 2.dp,
                              color = if (color.toArgb() == selectedColor) Color.Black else Color.Transparent,
                              shape = CircleShape
-                         )
+                         )*/
                          .clickable { selectedColor = color.toArgb() }
-                         .padding(horizontal = 2.dp)
-                    )
+                         .padding(horizontal = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (color.toArgb() == selectedColor) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color.Black
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -29,6 +29,8 @@ import com.monkey.domain.repository.BabyShieldDataSource.Companion.KEY_POSITION
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -40,10 +42,10 @@ class FloatingOverlayService : Service() {
     private val TAG = "FloatingOverlayService"
 
     private lateinit var sharedPrefs: BabyShieldDataSource
+    private lateinit var ioScope: CoroutineScope
 
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
-
     private lateinit var floatingView: View
     private lateinit var unlockButton: ImageView
     private var isLocked = true
@@ -59,6 +61,7 @@ class FloatingOverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.i(TAG, "onCreate: ")
+        ioScope = CoroutineScope(Dispatchers.IO + Job())
         val entryPoint = EntryPointAccessors.fromApplication(
             applicationContext,
             BabyShieldManagerEntryPoint::class.java
@@ -71,22 +74,24 @@ class FloatingOverlayService : Service() {
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         setupOverlayView()
         isRunning = true
-        CoroutineScope(Dispatchers.IO).launch {
+        ioScope.launch {
             observeEdgeMarginChanges(sharedPrefs.edgeMargin)
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
+        ioScope.launch {
             observeLockIconSize(sharedPrefs.iconSize)
         }
 
-        CoroutineScope(Dispatchers.Main).launch {
-            sharedPrefs.alpha
-                .collectLatest {
-                    unlockButton.alpha = it.toFloat() / 100
-                }
+        ioScope.launch {
+            CoroutineScope(Dispatchers.Main).launch {
+                sharedPrefs.alpha
+                    .collectLatest {
+                        unlockButton.alpha = it.toFloat() / 100
+                    }
+            }
         }
         
-        CoroutineScope(Dispatchers.IO).launch {
+        ioScope.launch {
             observeColorChanged(sharedPrefs.iconColor)
         }
     }
@@ -112,6 +117,9 @@ class FloatingOverlayService : Service() {
         if (::overlayView.isInitialized && overlayView.parent != null) {
             windowManager.removeView(overlayView)
             windowManager.removeView(floatingView)
+        }
+        if (::ioScope.isInitialized) {
+            ioScope.cancel()
         }
         isRunning = false
         super.onDestroy()
