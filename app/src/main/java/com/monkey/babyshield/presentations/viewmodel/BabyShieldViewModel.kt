@@ -36,7 +36,6 @@ class BabyShieldViewModel @Inject constructor(
             startOverlayService()
         }
         _overlayActive.value = !_overlayActive.value
-        Log.i(TAG, "activeOverlay: ${_overlayActive.value} FloatingOverlayService.isRunning ${FloatingOverlayService.isRunning}")
     }
 
     fun checkOverlayPermission() {

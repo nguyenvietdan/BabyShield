@@ -1,7 +1,6 @@
 package com.monkey.babyshield.utils
 
 import android.content.Context
-import android.graphics.Point
 import androidx.navigation.NavHostController
 import com.monkey.babyshield.R
 import com.monkey.babyshield.presentations.navigation.Screen

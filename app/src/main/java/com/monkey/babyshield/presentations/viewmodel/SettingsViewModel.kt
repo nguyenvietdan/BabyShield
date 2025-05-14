@@ -3,9 +3,11 @@ package com.monkey.babyshield.presentations.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.monkey.babyshield.di.IoDispatcher
 import com.monkey.domain.repository.BabyShieldDataSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,8 +17,11 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     val sharedPrefs: BabyShieldDataSource
 ) : ViewModel() {
+
+    private val TAG = "SettingsViewModel"
 
     private val _editingType = MutableStateFlow<WheelPickerType?>(null)
     val editingType:StateFlow<WheelPickerType?> = _editingType.asStateFlow()
@@ -50,7 +55,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun updateSharedPreference(key: String, value: Any) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             sharedPrefs.save(key, value)
         }
     }

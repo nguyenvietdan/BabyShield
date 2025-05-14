@@ -46,8 +46,6 @@ fun WheelPicker(
     onScrollFinished: (snappedIndex: Int) -> Int? = { null },
     content: @Composable LazyItemScope.(index: Int) -> Unit,
 ) {
-
-
     val lazyListState = rememberLazyListState(startIndex)
     val snapperLayoutInfo = rememberLazyListSnapperLayoutInfo(lazyListState = lazyListState)
     val isScrollInProgress = lazyListState.isScrollInProgress
@@ -134,7 +132,6 @@ private fun calculateAnimatedAlpha(
     index: Int,
     rowCount: Int
 ): Float {
-
     val distanceToIndexSnap = snapperLayoutInfo.distanceToIndexSnap(index).absoluteValue
     val layoutInfo = remember { derivedStateOf { lazyListState.layoutInfo } }.value
     val viewPortHeight = layoutInfo.viewportSize.height.toFloat()

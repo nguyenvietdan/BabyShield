@@ -1,9 +1,6 @@
 package com.monkey.babyshield.presentations.screens
 
-import android.graphics.Point
-import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,10 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,7 +39,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,15 +48,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.monkey.babyshield.R
 import com.monkey.babyshield.common.LockIconSize
 import com.monkey.babyshield.common.SettingSwitchItemData
 import com.monkey.babyshield.common.SettingValueColorItemData
 import com.monkey.babyshield.common.SettingValueItemData
+import com.monkey.babyshield.common.SettingsActionItem
 import com.monkey.babyshield.common.SettingsItemData
 import com.monkey.babyshield.presentations.components.DefaultWheelMinutesTimePicker
 import com.monkey.babyshield.presentations.theme.InactiveGreen
@@ -132,15 +128,14 @@ fun SettingsScreenContentExtend(
     val screenHeight = metrics.heightPixels
     val minSize = min(screenWidth, screenHeight)
 
-
     val editingType by settingsViewModel.editingType.collectAsState()
-    val showSheet = editingType != null
 
-    if (showSheet) {
+    if (editingType != null) {
         val selectedValue = when (editingType) {
             WheelPickerType.EDGE_MARGIN -> edgeMargin
             WheelPickerType.ALPHA -> alphaValue
             WheelPickerType.ICON_SIZE -> iconSize
+            WheelPickerType.ICON_COLOR -> iconColor
             else -> 0
         }
         val maxValue = when (editingType) {
@@ -157,50 +152,24 @@ fun SettingsScreenContentExtend(
             else -> 0
         }
 
-        when (editingType) {
-            WheelPickerType.EDGE_MARGIN, WheelPickerType.ALPHA -> {
-                WheelPickerDialog(
-                    selected = selectedValue,
-                    minValue = minValue,
-                    maxValue = maxValue,
-                    onDismiss = { settingsViewModel.closeSheet() },
-                    onConfirm = { value ->
-                        when (editingType) {
-                            WheelPickerType.EDGE_MARGIN -> settingsViewModel.updateEdgeMargin(value)
-                            WheelPickerType.ALPHA -> settingsViewModel.updateAlpha(value)
-                            else -> {}
-                        }
-                        settingsViewModel.closeSheet()
-                    }
-                )
+        DialogSetting(
+            selected = selectedValue,
+            minValue = minValue,
+            maxValue = maxValue,
+            screenWidth = minSize,
+            type = editingType,
+            onDismiss = { settingsViewModel.closeSheet() },
+            onConfirm = { value ->
+                when (editingType) {
+                    WheelPickerType.EDGE_MARGIN -> settingsViewModel.updateEdgeMargin(value)
+                    WheelPickerType.ALPHA -> settingsViewModel.updateAlpha(value)
+                    WheelPickerType.ICON_SIZE -> settingsViewModel.updateIconSize(value)
+                    WheelPickerType.ICON_COLOR -> settingsViewModel.updateIconColor(value)
+                    else -> {}
+                }
+                settingsViewModel.closeSheet()
             }
-
-            WheelPickerType.ICON_SIZE -> {
-                SizeSettingsDialog(
-                    selected = iconSize,
-                    screenWidth = minSize,
-                    onDismiss = { settingsViewModel.closeSheet() },
-                    onConfirm = {
-                        settingsViewModel.updateIconSize(it)
-                        settingsViewModel.closeSheet()
-                    }
-                )
-            }
-            WheelPickerType.ICON_COLOR -> {
-                ColorSettings(
-                    selected = iconColor,
-                    onDismiss = { settingsViewModel.closeSheet() },
-                    onConfirm = {
-                        settingsViewModel.updateIconColor(it)
-                        settingsViewModel.closeSheet()
-                    }
-                )
-            }
-
-            else -> {
-                Log.i("dan.nv", "SettingsScreenContentExtend: there is no option")
-            }
-        }
+        )
     }
 
     LazyColumn(
@@ -234,7 +203,10 @@ fun SettingsScreenContentExtend(
                     SettingValueItemData("Alpha", "$alphaValue") {
                         settingsViewModel.openSheet(WheelPickerType.ALPHA)
                     },
-                    SettingValueItemData("IconSize", LockIconSize.entries[iconSize].getLocalizedString()) {
+                    SettingValueItemData(
+                        "IconSize",
+                        LockIconSize.entries[iconSize].getLocalizedString()
+                    ) {
                         settingsViewModel.openSheet(WheelPickerType.ICON_SIZE)
                     },
                     SettingValueColorItemData("IconColor", iconColor) {
@@ -247,7 +219,6 @@ fun SettingsScreenContentExtend(
         // Add more SettingGroups here for AppSettings, UiSettings...
     }
 }
-
 
 @Composable
 fun SettingGroup(title: String, items: List<SettingsItemData>) {
@@ -273,7 +244,7 @@ fun SettingGroup(title: String, items: List<SettingsItemData>) {
                 )
 
                 is SettingValueItemData -> ValueRow(item.title, item.value, item.onClick)
-                /*is SettingsActionItem -> ActionRow(item.title, item.onClick)*/
+                is SettingsActionItem -> ActionRow(item.title, item.onClick)
                 is SettingValueColorItemData -> ColorRow(item.title, item.value, item.onClick)
             }
         }
@@ -351,18 +322,20 @@ fun ActionRow(title: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun WheelPickerDialog(
+fun DialogSetting(
     selected: Int,
     minValue: Int,
     maxValue: Int,
+    screenWidth: Int,
+    type: WheelPickerType?,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
-    var currentIndex by remember { mutableIntStateOf(selected) }
+    var currentValue by remember { mutableStateOf(selected) }
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = { onConfirm(currentIndex) }) {
+            TextButton(onClick = { onConfirm(currentValue) }) {
                 Text("OK")
             }
         },
@@ -371,93 +344,93 @@ fun WheelPickerDialog(
                 Text("Cancel")
             }
         },
+        title = { Text(text = getTitle(type)) },
         text = {
-            DefaultWheelMinutesTimePicker(
-                startTime = currentIndex,
-                minTime = minValue,
-                maxTime = maxValue,
-                onSelectedMinutes = {
-                    currentIndex = it
-                }
-            )
+            when (type) {
+                WheelPickerType.ICON_COLOR -> ColorContent(
+                    currentValue,
+                    onClick = { value -> currentValue = value })
+
+                WheelPickerType.EDGE_MARGIN, WheelPickerType.ALPHA -> DefaultWheelMinutesTimePicker(
+                    startTime = currentValue,
+                    minTime = minValue,
+                    maxTime = maxValue,
+                    onSelectedMinutes = {
+                        currentValue = it
+                    }
+                )
+
+                WheelPickerType.ICON_SIZE -> SizeSettingsText(
+                    selected = currentValue,
+                    screenWidth = screenWidth,
+                    onClick = { currentValue = it })
+
+                else -> {}
+            }
         }
     )
 }
 
 @Composable
-fun SizeSettingsDialog(
+private fun getTitle(type: WheelPickerType?) = when(type) {
+    WheelPickerType.EDGE_MARGIN -> stringResource(R.string.select_edge_margin)
+    WheelPickerType.ALPHA -> stringResource(R.string.select_alpha)
+    WheelPickerType.ICON_SIZE -> stringResource(R.string.select_icon_size)
+    WheelPickerType.ICON_COLOR -> stringResource(R.string.select_icon_color)
+    else -> ""
+}
+
+@Composable
+fun SizeSettingsText(
     selected: Int,
     screenWidth: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit
+    onClick: (Int) -> Unit
 ) {
-    var currentIndex by remember { mutableIntStateOf(selected) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = { onConfirm(currentIndex) }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-        title = { Text(text = "Select size") },
-        text = {
-            if (screenWidth > 1080) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    LockIconSize.entries.toTypedArray().forEachIndexed { index, size ->
-                        TextButton(
-                            onClick = { currentIndex = index },
-                            shape = ButtonDefaults.textShape,
-                            colors = if (currentIndex == index) {
-                                ButtonDefaults.textButtonColors()
-                                    .copy(containerColor = InactiveGreen)
-                            } else {
-                                ButtonDefaults.textButtonColors()
-                            },
-                            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 32.dp)
-                        ) {
-                            Text(size.getLocalizedString().uppercase())
-                        }
-                    }
-                }
-            } else {
-                Column(modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    LockIconSize.entries.toTypedArray().forEachIndexed { index, size ->
-                        TextButton(
-                            onClick = { currentIndex = index },
-                            shape = ButtonDefaults.textShape,
-                            colors = if (currentIndex == index) {
-                                ButtonDefaults.textButtonColors()
-                                    .copy(containerColor = InactiveGreen)
-                            } else {
-                                ButtonDefaults.textButtonColors()
-                            },
-                            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 32.dp)
-                        ) {
-                            Text(size.getLocalizedString().uppercase())
-                        }
-                    }
-                }
-            }
+    if (screenWidth > 1080) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            SizeSettingsContent(selected = selected, onClick = onClick)
         }
-    )
+    } else {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            SizeSettingsContent(selected = selected, onClick = onClick)
+        }
+    }
 }
 
 @Composable
-fun ColorSettings(
+fun SizeSettingsContent(
     selected: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit
+    onClick: (Int) -> Unit
+) {
+    LockIconSize.entries.toTypedArray().forEachIndexed { index, size ->
+        TextButton(
+            onClick = { onClick(index) },
+            shape = ButtonDefaults.textShape,
+            colors = if (selected == index) {
+                ButtonDefaults.textButtonColors()
+                    .copy(containerColor = InactiveGreen)
+            } else {
+                ButtonDefaults.textButtonColors()
+            },
+            contentPadding = PaddingValues(vertical = 16.dp, horizontal = 32.dp)
+        ) {
+            Text(size.getLocalizedString().uppercase())
+        }
+    }
+}
+
+@Composable
+fun ColorContent(
+    selected: Int,
+    onClick: (Int) -> Unit
 ) {
     val colors = listOf(
         Color.Red,
@@ -471,59 +444,31 @@ fun ColorSettings(
         Color.White,
         Color.Gray
     )
-    var selectedColor by remember { mutableStateOf(selected) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selectedColor) }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-        title = { Text(text = "Select the color")},
-        text = {
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                colors.forEachIndexed{ index, color ->
-                    if (index != 0 ) Spacer(modifier = Modifier.width(2.dp))
-                    Box(
-                     modifier = Modifier
-                         .size(40.dp)
-                         .background(color = color, shape = RoundedCornerShape(10.dp))
-                         /*.border(
-                             width = 2.dp,
-                             color = if (color.toArgb() == selectedColor) Color.Black else Color.Transparent,
-                             shape = CircleShape
-                         )*/
-                         .clickable { selectedColor = color.toArgb() }
-                         .padding(horizontal = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (color.toArgb() == selectedColor) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                tint = Color.Black
-                            )
-                        }
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.SpaceAround
+    ) {
+        colors.forEachIndexed { index, color ->
+            if (index != 0) Spacer(modifier = Modifier.width(2.dp))
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(color = color, shape = RoundedCornerShape(10.dp))
+                    .clickable {
+                        onClick(color.toArgb())
                     }
+                    .padding(horizontal = 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (color.toArgb() == selected) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black)
                 }
             }
         }
-    )
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun SizeSettingsDialogPreview() {
-    ColorSettings(
-        Color.Red.toArgb(),
-        {}
-    ) { }
 }

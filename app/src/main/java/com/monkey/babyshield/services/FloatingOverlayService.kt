@@ -1,23 +1,25 @@
 package com.monkey.babyshield.services
 
-import android.animation.AnimatorSet
+import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.graphics.Point
+import android.graphics.PointF
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.core.animation.doOnEnd
 import com.monkey.babyshield.R
@@ -42,26 +44,41 @@ class FloatingOverlayService : Service() {
     private val TAG = "FloatingOverlayService"
 
     private lateinit var sharedPrefs: BabyShieldDataSource
-    private lateinit var ioScope: CoroutineScope
 
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
-    private lateinit var floatingView: View
+
     private lateinit var unlockButton: ImageView
+    private lateinit var unlockParams: LayoutParams
     private var isLocked = true
 
     private var edgeMargin = 24
-    private var initialX = 0
-    private var initialY = 0
-    private var initialTouchX = 0f
-    private var initialTouchY = 0f
+    private var initialPosition = Point(0, 0)
+    private var initialTouch = PointF(0f, 0f)
     private var currentScreenWidth = 0
     private var currentScreenHeight = 0
+    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO + Job())
+    private var currentColor: Int = 0
+
+    private val orientationChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+                val newConfiguration = context?.resources?.configuration?.orientation
+                when (newConfiguration) {
+                    Configuration.ORIENTATION_LANDSCAPE, Configuration.ORIENTATION_PORTRAIT -> {
+                        updateScreenSize()
+                        snapToEdge()
+                    }
+
+                    Configuration.ORIENTATION_SQUARE, Configuration.ORIENTATION_UNDEFINED -> {}
+                }
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
         Log.i(TAG, "onCreate: ")
-        ioScope = CoroutineScope(Dispatchers.IO + Job())
         val entryPoint = EntryPointAccessors.fromApplication(
             applicationContext,
             BabyShieldManagerEntryPoint::class.java
@@ -69,11 +86,16 @@ class FloatingOverlayService : Service() {
         sharedPrefs = entryPoint.getBabyShieldDataSource()
         isLocked = sharedPrefs.isLocked.value
         edgeMargin = sharedPrefs.edgeMargin.value
-
-        NotificationHelper.createNotificationChannel(applicationContext)
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        currentColor = sharedPrefs.iconColor.value
+        NotificationHelper.createNotificationChannel(applicationContext)
         setupOverlayView()
         isRunning = true
+        registerReceiver(orientationChangeReceiver, IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED))
+        observeDataChange()
+    }
+
+    private fun observeDataChange() {
         ioScope.launch {
             observeEdgeMarginChanges(sharedPrefs.edgeMargin)
         }
@@ -90,9 +112,9 @@ class FloatingOverlayService : Service() {
                     }
             }
         }
-        
+
         ioScope.launch {
-            observeColorChanged(sharedPrefs.iconColor)
+            observeColorChange(sharedPrefs.iconColor)
         }
     }
 
@@ -102,8 +124,6 @@ class FloatingOverlayService : Service() {
             NotificationHelper.NOTIFICATION_ID,
             NotificationHelper.createNotification(applicationContext)
         )
-
-        //addOverlayToWindow()
         addLayoutParams(!isLocked)
 
         return START_STICKY
@@ -114,25 +134,26 @@ class FloatingOverlayService : Service() {
     }
 
     override fun onDestroy() {
-        if (::overlayView.isInitialized && overlayView.parent != null) {
+        if (::overlayView.isInitialized && overlayView.isAttachedToWindow) {
             windowManager.removeView(overlayView)
-            windowManager.removeView(floatingView)
+            windowManager.removeView(unlockButton)
         }
-        if (::ioScope.isInitialized) {
-            ioScope.cancel()
-        }
+        unregisterReceiver(orientationChangeReceiver)
+        ioScope.cancel()
         isRunning = false
         super.onDestroy()
     }
 
-
-    @SuppressLint("ClickableViewAccessibility", "ResourceAsColor")
-    private fun setupOverlayView() {
+    private fun updateScreenSize() {
         val metrics = resources.displayMetrics
         currentScreenWidth = metrics.widthPixels
         currentScreenHeight = metrics.heightPixels
+    }
 
-        val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+    @SuppressLint("ClickableViewAccessibility", "ResourceAsColor")
+    private fun setupOverlayView() {
+        updateScreenSize()
+
         overlayView = View(this).apply {
             setBackgroundColor(0x00000000) // Fully transparent
             // Semi-transparent black
@@ -142,21 +163,51 @@ class FloatingOverlayService : Service() {
             }
         }
 
-        floatingView = inflater.inflate(R.layout.floating_button, null)
+        unlockButton =
+            ImageView(applicationContext)// floatingView.findViewById<ImageView>(R.id.blockButton)!!
+                .apply {
+                    if (isLocked) {
+                        setImageResource(R.drawable.ic_lock)
+                    } else {
+                        setImageResource(R.drawable.ic_unlock)
+                    }
+                    background = null
+                    alpha = sharedPrefs.alpha.value.toFloat() / 100 // 0.7
+                    setOnTouchListener { view, event ->
+                        when (event.action) {
+                            MotionEvent.ACTION_DOWN -> {
+                                initialPosition = Point(unlockParams.x, unlockParams.y)
+                                initialTouch = PointF(event.rawX, event.rawY)
+                                return@setOnTouchListener true
+                            }
 
-        unlockButton = floatingView.findViewById<ImageView>(R.id.blockButton)!!
-            .apply {
-                if (isLocked) {
-                    setImageResource(R.drawable.ic_lock)
-                } else {
-                    setImageResource(R.drawable.ic_unlock)
+                            MotionEvent.ACTION_MOVE -> {
+                                unlockParams.x =
+                                    initialPosition.x + (event.rawX - initialTouch.x).toInt()
+                                unlockParams.y =
+                                    initialPosition.y + (event.rawY - initialTouch.y).toInt()
+                                updateUnlockViewLayout()
+                                return@setOnTouchListener true
+                            }
+
+                            MotionEvent.ACTION_UP -> {
+                                val deltaX = abs(event.rawX - initialTouch.x)
+                                val deltaY = abs(event.rawY - initialTouch.y)
+
+                                if (deltaX < 10 && deltaY < 10) {
+                                    toggleTouchBlocking()
+                                } else {
+                                    snapToEdge()
+                                }
+                                return@setOnTouchListener true
+                            }
+                        }
+                        return@setOnTouchListener false
+                    }
                 }
-                background = null
-                alpha = sharedPrefs.alpha.value.toFloat() / 100 // 0.7
-            }
-        val floatingParams = LayoutParams(
-            LayoutParams.WRAP_CONTENT,
-            LayoutParams.WRAP_CONTENT,
+        unlockParams = LayoutParams(
+            DEFAULT_ICON_SIZE,
+            DEFAULT_ICON_SIZE,
             LayoutParams.TYPE_APPLICATION_OVERLAY,
             LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
@@ -165,61 +216,17 @@ class FloatingOverlayService : Service() {
             x = sharedPrefs.position.value.x
             y = sharedPrefs.position.value.y
         }
-        setTouchListener(floatingParams)
-        addOverlayToWindow(floatingParams)
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    private fun setTouchListener(params: LayoutParams) {
-        Log.e(TAG, "setTouchListener: ")
-        floatingView.setOnTouchListener { view, event ->
-
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    return@setOnTouchListener true
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (event.rawX - initialTouchX).toInt()
-                    params.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(floatingView, params)
-                    return@setOnTouchListener true
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    val deltaX = abs(event.rawX - initialTouchX)
-                    val deltaY = abs(event.rawY - initialTouchY)
-
-                    if (deltaX < 10 && deltaY < 10) {
-                        toggleTouchBlocking()
-                    } else {
-                        snapToEdge(params)
-                    }
-                    return@setOnTouchListener true
-                }
-            }
-            return@setOnTouchListener false
-        }
+        addOverlayToWindow()
     }
 
     /**
      * Running on UI thread
      */
     @SuppressLint("Recycle")
-    private fun snapToEdge(params: LayoutParams) {
+    private fun snapToEdge() {
         val viewWidth = unlockButton.width
-        val viewHeight = unlockButton.height
-
-        getFloatingAnimation(params, viewWidth).start()
-    }
-
-    private fun getFloatingAnimation(params: LayoutParams, viewWidth: Int): ValueAnimator {
-        val distanceToLeftEdge = params.x
-        val distanceToRightEdge = currentScreenWidth - (params.x + viewWidth)
+        val distanceToLeftEdge = unlockParams.x
+        val distanceToRightEdge = currentScreenWidth - (unlockParams.x + viewWidth)
 
         val targetX = if (distanceToLeftEdge <= distanceToRightEdge) {
             edgeMargin
@@ -227,34 +234,37 @@ class FloatingOverlayService : Service() {
             currentScreenWidth - viewWidth - edgeMargin
         }
 
-        return ValueAnimator.ofInt(params.x, targetX).apply {
+        val animator = ValueAnimator.ofInt(unlockParams.x, targetX).apply {
             duration = ANIMATION_DURATION_MS
             interpolator = AccelerateDecelerateInterpolator()
             addUpdateListener { animation ->
-                params.x = animation.animatedValue as Int
-                windowManager.updateViewLayout(floatingView, params)
+                unlockParams.x = animation.animatedValue as Int
+                updateUnlockViewLayout()
+
             }
             doOnEnd {
                 CoroutineScope(Dispatchers.IO).launch {
-                    sharedPrefs.save(KEY_POSITION, Point(params.x, params.y))
+                    sharedPrefs.save(KEY_POSITION, Point(unlockParams.x, unlockParams.y))
                 }
             }
         }
+
+        animator.start()
     }
 
     private suspend fun observeEdgeMarginChanges(edgeMarginFlow: Flow<Int>) {
         edgeMarginFlow.collectLatest { margin ->
             edgeMargin = margin
-            if (floatingView.layoutParams is LayoutParams) {
+            if (unlockButton.layoutParams is LayoutParams) {
                 withContext(Dispatchers.Main) {
-                    snapToEdge(floatingView.layoutParams as LayoutParams)
+                    snapToEdge()
                 }
             }
         }
     }
 
     /**
-     * Running on UI thread
+     * Scale unlockButton Running on UI thread
      */
     @SuppressLint("Recycle")
     private fun scaleIconSizeWithAnimation(iconSize: Int) {
@@ -277,30 +287,21 @@ class FloatingOverlayService : Service() {
      */
     @SuppressLint("Recycle")
     private fun updateSizeWithAnimation(iconSize: Int) {
-        val params = unlockButton.layoutParams as? FrameLayout.LayoutParams ?: return
+        if (!::unlockParams.isInitialized) return
         val targetSize = dpToPx(applicationContext, iconSize * DEFAULT_ICON_SIZE)
-        val start = params.width
+        val start = unlockParams.width
         if (start == targetSize) return
-
         val animator = ValueAnimator.ofInt(start, targetSize).apply {
             duration = ANIMATION_DURATION_MS
             interpolator = AccelerateDecelerateInterpolator()
             addUpdateListener { animation ->
-                params.width = animation.animatedValue as Int
-                params.height = animation.animatedValue as Int
-                unlockButton.layoutParams = params
+                unlockParams.width = animation.animatedValue as Int
+                unlockParams.height = animation.animatedValue as Int
+                updateUnlockViewLayout()
             }
         }
 
-        val animatorSet = AnimatorSet()
-        animatorSet.playTogether(animator)
-        val floatingParams = floatingView.layoutParams as LayoutParams
-
-        animatorSet.playTogether(getFloatingAnimation(floatingParams, targetSize))
-
-        animatorSet.start()
-
-        //animator.start()
+        animator.start()
     }
 
     private suspend fun observeLockIconSize(lockIconSizeFlow: Flow<Int>) {
@@ -310,21 +311,33 @@ class FloatingOverlayService : Service() {
             }
         }
     }
-    
-    private suspend fun observeColorChanged(colorFlow: Flow<Int>) {
-        colorFlow.collectLatest { color ->
-            Log.i(TAG, "observeColorChanged: color changed $color")
+
+    private suspend fun observeColorChange(color: Flow<Int>) {
+        color.collectLatest { newColor ->
             withContext(Dispatchers.Main) {
-                unlockButton.setColorFilter(color)
+                updateColorAnimation(newColor)
             }
         }
     }
 
+    private fun updateColorAnimation(color: Int) {
+        if (!::unlockButton.isInitialized) return
+        val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), currentColor, color).apply {
+            duration = ANIMATION_DURATION_MS
+            addUpdateListener { animation ->
+                unlockButton.setColorFilter(animation.animatedValue as Int)
+            }
+            doOnEnd {
+                currentColor = color
+            }
+        }
+        colorAnimation.start()
+    }
+
     @SuppressLint("ResourceAsColor")
     private fun toggleTouchBlocking() {
-        isLocked = !isLocked
         Log.i(TAG, "setupOverlayView: isLocked $isLocked")
-
+        isLocked = !isLocked
         updateUnlockButton()
         addLayoutParams(!isLocked)
     }
@@ -338,7 +351,7 @@ class FloatingOverlayService : Service() {
         }
     }
 
-    private fun addOverlayToWindow(buttonParams: LayoutParams) {
+    private fun addOverlayToWindow() {
         // Setup layout params for overlay
         val overlayParams = LayoutParams(
             LayoutParams.MATCH_PARENT,
@@ -352,9 +365,8 @@ class FloatingOverlayService : Service() {
 
         // Add views to window
         windowManager.addView(overlayView, overlayParams)
-        windowManager.addView(floatingView, buttonParams)
+        windowManager.addView(unlockButton, unlockParams)
     }
-
 
     private fun addLayoutParams(shouldAddedTouchable: Boolean) {
         val params = overlayView.layoutParams as LayoutParams
@@ -362,6 +374,12 @@ class FloatingOverlayService : Service() {
             if (shouldAddedTouchable) params.flags or LayoutParams.FLAG_NOT_TOUCHABLE
             else params.flags and LayoutParams.FLAG_NOT_TOUCHABLE.inv()
         windowManager.updateViewLayout(overlayView, params)
+    }
+
+    private fun updateUnlockViewLayout() {
+        if (unlockButton.isAttachedToWindow && ::unlockParams.isInitialized) {
+            windowManager.updateViewLayout(unlockButton, unlockParams)
+        }
     }
 
     companion object {

@@ -59,4 +59,10 @@
     <string name="small_icon_size">Small</string>"
     <string name="medium_icon_size">Medium</string>"
     <string name="large_icon_size">Large</string>"
+
+    <!-- Dialog title-->
+    <string name="select_edge_margin">Select the edge margin value</string>
+    <string name="select_alpha">Select the unlock alpha value</string>
+    <string name="select_icon_size">Select the icon size value</string>
+    <string name="select_icon_color">Select the icon color value</string>
 </resources>

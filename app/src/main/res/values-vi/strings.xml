@@ -60,4 +60,10 @@
     <string name="small_icon_size">Nhỏ</string>"
     <string name="medium_icon_size">Vừa</string>"
     <string name="large_icon_size">Lớn</string>"
+
+    <!-- Dialog title-->
+    <string name="select_edge_margin">Chọn căn lề</string>
+    <string name="select_alpha">Chọn độ mờ</string>
+    <string name="select_icon_size">Chọn kích thước</string>
+    <string name="select_icon_color">Chọn màu</string>
 </resources>
