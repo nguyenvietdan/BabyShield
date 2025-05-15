@@ -38,9 +38,21 @@
     <string name="accessibility_permission_denied">Accessibility permission denied. Touch blocker cannot function without it.</string>
 
     <!-- Settings -->
+    <string name="baby_shield_settings">Baby shield settings</string>
+    <string name="locked">Auto locked</string>
+    <string name="locked_desc">Automatically lock touch blocking when enabled</string>"
     <string name="edge_margin">Edge Margin</string>
-    <string name="edge_margin_desc">Distance from screen edge when floating button snaps (in dp)</string>
     <string name="margin_value_dp">%d dp</string>
+
+    <string name="unlock_button_settings">Unlock button settings</string>
+    <string name="transparency">Transparency</string>
+    <string name="transparency_desc">Transparency of the floating button (0–100)</string>
+    <string name="edge_margin_desc">Distance from screen edge when floating button snaps (in dp)</string>
+    <string name="icon_size">Icon size</string>
+    <string name="icon_size_desc">Size of the floating button (small, medium, large)</string>
+    <string name="icon_color">Icon Color</string>
+    <string name="icon_color_desc">Color of the floating button</string>
+
     <string name="auto_start">Auto-start Service</string>
     <string name="auto_start_desc">Automatically start the service when accessibility service starts</string>
     <string name="vibrate_feedback">Vibration Feedback</string>
@@ -48,6 +60,9 @@
     <string name="show_block_icon">Show Block Icon</string>
     <string name="show_block_icon_desc">Show a visual indicator when touch is blocked</string>
     <string name="save">Save Settings</string>
+
+    <string name="ok">Ok</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Floating Button -->
     <string name="touch_block_button">Touch Block Button</string>

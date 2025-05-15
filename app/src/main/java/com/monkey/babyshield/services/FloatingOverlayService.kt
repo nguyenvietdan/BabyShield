@@ -66,7 +66,7 @@ class FloatingOverlayService : Service() {
                 val newConfiguration = context?.resources?.configuration?.orientation
                 when (newConfiguration) {
                     Configuration.ORIENTATION_LANDSCAPE, Configuration.ORIENTATION_PORTRAIT -> {
-                        updateScreenSize()
+                        updateScreenSize(true)
                         snapToEdge()
                     }
 
@@ -144,8 +144,14 @@ class FloatingOverlayService : Service() {
         super.onDestroy()
     }
 
-    private fun updateScreenSize() {
+    private fun updateScreenSize(updateCoordinatesIfNeeded: Boolean = false) {
         val metrics = resources.displayMetrics
+        if (updateCoordinatesIfNeeded) {
+            val percentX = unlockParams.x / currentScreenWidth.toFloat()
+            val percentY = unlockParams.y / currentScreenHeight.toFloat()
+            unlockParams.x = (metrics.widthPixels * percentX).toInt()
+            unlockParams.y = (metrics.heightPixels * percentY).toInt()
+        }
         currentScreenWidth = metrics.widthPixels
         currentScreenHeight = metrics.heightPixels
     }

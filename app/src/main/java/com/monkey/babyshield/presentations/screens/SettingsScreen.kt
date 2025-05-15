@@ -80,7 +80,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Settings") },
+                title = { Text(text = stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -181,15 +181,15 @@ fun SettingsScreenContentExtend(
     ) {
         item {
             SettingGroup(
-                title = "Baby shield Settings",
+                title = stringResource(R.string.babt_shield_settings),
                 items = listOf(
                     SettingSwitchItemData(
-                        title = "Locked",
-                        subTitle = "Auto locked when enabled",
+                        title = stringResource(R.string.locked),
+                        subTitle = stringResource(R.string.locked_desc),
                         checked = isLocked,
                         onToggle = { settingsViewModel.updateLocked(it) }
                     ),
-                    SettingValueItemData("Edge margin", "$edgeMargin") {
+                    SettingValueItemData(stringResource(R.string.edge_margin), "$edgeMargin") {
                         settingsViewModel.openSheet(WheelPickerType.EDGE_MARGIN)
                     }
                 )
@@ -198,18 +198,18 @@ fun SettingsScreenContentExtend(
 
         item {
             SettingGroup(
-                title = "Unlock button Settings",
+                title = stringResource(R.string.unlock_button_settings),
                 items = listOf(
-                    SettingValueItemData("Alpha", "$alphaValue") {
+                    SettingValueItemData(stringResource(R.string.transparency), "$alphaValue") {
                         settingsViewModel.openSheet(WheelPickerType.ALPHA)
                     },
                     SettingValueItemData(
-                        "IconSize",
+                        stringResource(R.string.icon_size),
                         LockIconSize.entries[iconSize].getLocalizedString()
                     ) {
                         settingsViewModel.openSheet(WheelPickerType.ICON_SIZE)
                     },
-                    SettingValueColorItemData("IconColor", iconColor) {
+                    SettingValueColorItemData(stringResource(R.string.icon_color), iconColor) {
                         settingsViewModel.openSheet(WheelPickerType.ICON_COLOR)
                     }
                 )
@@ -336,12 +336,12 @@ fun DialogSetting(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = { onConfirm(currentValue) }) {
-                Text("OK")
+                Text(text = stringResource(R.string.ok))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(text = stringResource(R.string.cancel))
             }
         },
         title = { Text(text = getTitle(type)) },
