@@ -181,7 +181,7 @@ fun SettingsScreenContentExtend(
     ) {
         item {
             SettingGroup(
-                title = stringResource(R.string.babt_shield_settings),
+                title = stringResource(R.string.baby_shield_settings),
                 items = listOf(
                     SettingSwitchItemData(
                         title = stringResource(R.string.locked),
