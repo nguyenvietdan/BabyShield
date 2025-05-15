@@ -48,7 +48,7 @@
     <string name="edge_margin_desc">Distance from screen edge when floating button snaps (in dp)</string>
     <string name="unlock_button_settings">Cài đặt nút khóa</string>
     <string name="transparency">Độ trong suốt</string>
-    <string name="transparency_desc">Độ trong suốt của nút (0-100)</string>
+    <string name="transparency_desc">Độ trong suốt của nút (0–100)</string>
     <string name="icon_size">Kích thước của nút</string>
     <string name="icon_size_desc">Kích thước của nút (nhỏ, vừa, lớn)</string>
     <string name="icon_color">Màu cho nút</string>
